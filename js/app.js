@@ -4,6 +4,9 @@ var map;
 //Create a global infowindow variable
 var markerInfoWindow;	
 
+//create empty array to store future markers
+var newPlaces = [];
+
 //list my default locations on the map
 var myPlaces = [
 	{title: "Майдан Незалежності", location: {lat: 50.450306, lng: 30.523671}},
@@ -39,9 +42,6 @@ var myPlaces = [
 ];
 
 function initMap() {	
-	//create empty array to store future markers
-	
-
 	// Create a new StyledMapType object, passing it an array of styles,
 	// and the name to be displayed on the map type control.
 	var styledMapType = new google.maps.StyledMapType(
@@ -498,7 +498,6 @@ function showInfoWindow (marker, markerInfoWindow, details) {
 	
 	// Open the infowindow on the correct marker.
 	markerInfoWindow.open(map, marker);		
-	
 }
 
 //request to perform GoogleMaps search
@@ -567,8 +566,8 @@ function initAutocomplete(input, markerInfoWindow) {
 		
 				// Create an onclick event to open the large infowindow at each marker.		
 				google.maps.event.addListener(marker, 'click', function(){
-					showInfoWindow(this, markerInfoWindow);
-					//searcWithFoursquare(this);		
+					searchWithFoursquare(this, markerInfoWindow);	
+					toggleBounce(this);				
 				});		
 				
 				marker.addListener('mouseover', function() {
@@ -695,7 +694,7 @@ function mapError() {
 function MyViewModel() {
     var self = this;
 	
-	self.placesList = ko.observableArray(myPlaces);  
+	self.placesList = ko.observableArray();  
 
 	//query for filtering the results
 	self.query = ko.observable("");
@@ -715,26 +714,29 @@ function MyViewModel() {
 		searchWithFoursquare(place.marker, markerInfoWindow);
 		toggleBounce(place.marker);
 	};	
-
+	
 	//filter the results with user query
 	self.filterResults = ko.computed(function(){
 		
 		var filter = self.query().toLowerCase();
-		if (self.placesList().length !== 0) {
+		if (self.placesList(myPlaces).length !== 0) {
 			if (!filter){
-				self.placesList().forEach(function(place) {	
-					//place.marker.setVisible(true);
+				self.placesList().forEach(function (place) {
+				  if ( place.marker ) {
+					place.marker.setVisible(true);
+				  } 
 				});
 				
 				return self.placesList();
 			} else {	
 				//return results matching the query
-				return ko.utils.arrayFilter(self.placesList(), function(place) {
+				return ko.utils.arrayFilter(self.placesList(), function(place) {					
 					if (place.title.toLowerCase().indexOf(filter) >= 0){
 						place.marker.setVisible(true);
 						return true;
 					} else{
 						place.marker.setVisible(false);
+						return false;
 					}				
 				});				
 			}
@@ -742,16 +744,7 @@ function MyViewModel() {
 			handleError('Oops, no places in favourites. Go add some...');
 		}		
 	}); 	
-	
-	ko.bindingHandlers.initAutocomplete = {
-		init: function (element, valueAccessor, allBindingsAccessor) {
-			
-		},
-		update: function (element, valueAccessor, allBindingsAccessor) {
-			ko.bindingHandlers.value.update(element, valueAccessor);
-		}
-	};
 }
 
-var vm = new MyViewModel();
+var vm = new MyViewModel(myPlaces);
 ko.applyBindings(vm);

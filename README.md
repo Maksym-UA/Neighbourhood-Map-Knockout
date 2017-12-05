@@ -17,7 +17,7 @@ framework to handle filtering and listing.
 - Extract files from the archive. Open the newly created folder and click on `neighbourhood_project.html`
 - The app will open in your default browser.
 - Markers are loaded by default. Click any of them to get more info on the location.
-- Click ![Menu](https://github.com/Maksym-UA/Neighbourhood-Map-Knockout/blob/master/src/menu.png) icon.
+- Click https://github.com/Maksym-UA/Neighbourhood-Map-Knockout/blob/master/src/menu.png icon.
 - Enter place you are loooking for in `Search online` field.
 - You can filter location by typing keywords in `Filter` field.
 - You can click any list item to get more info on the location.

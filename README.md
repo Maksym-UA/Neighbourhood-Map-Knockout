@@ -13,7 +13,14 @@ framework to handle filtering and listing.
 
 - You'll need to use any web browser like [Chrome](https://www.google.com/chrome/browser/desktop/index.html), 
 [Mozilla Firefox](https://www.mozilla.org/uk/firefox/new/) or [IE](https://www.microsoft.com/en-us/search/result.aspx?q=internet+explorer#nav-downloads). 
-- Then just open the app in the browser you like. 
+- Download ZIP-file on your machine. 
+- Extract files from the archive. Open the newly created folder and click on `neighbourhood_project.html`
+- The app will open in your default browser.
+- Markers are loaded by default. Click any of them to get more info on the location.
+- Click ![alt text](https://raw.githubusercontent.com/Maksym-UA/Neighbourhood-Map-Knockout/tree/master/src/menu.png) icon.
+- Enter place you are loooking for in `Search online` field.
+- You can filter location by typing keywords in `Filter` field.
+- You can clikc any list item to get more info on the location.
 
 
 ### Modification

@@ -7,6 +7,9 @@ var markerInfoWindow;
 //create empty array to store future markers
 var newPlaces = [];
 
+//initial position of the map
+var myCenter = {lat: 50.45068, lng: 30.523099};
+
 //list my default locations on the map
 var myPlaces = [
 	{title: "Майдан Незалежності", location: {lat: 50.450306, lng: 30.523671}},
@@ -324,8 +327,7 @@ function initMap() {
 	],
 	{name: 'Styled Map'});
 	
-	//initial position of the map
-	var myCenter = {lat: 50.45068, lng: 30.523099};
+	
 
 	// Create new infowindow object
 	markerInfoWindow = new google.maps.InfoWindow();
@@ -356,9 +358,9 @@ function initMap() {
 	var highlightedIcon = makeMarkerIcon('1aa3ff');
 	
 	// Add markers to the array and initialize them on the map
-	for (var i =0; i < myPlaces.length; i++){
-		var position = myPlaces[i].location;
-		var title = myPlaces[i].title;
+	myPlaces.forEach(function(place) {
+		var position = place.location;
+		var title = place.title;
 		// Create a marker for each location
 		var marker = new google.maps.Marker({
 			map: map,
@@ -369,8 +371,8 @@ function initMap() {
 		});
 		
 		//add marker property to each item in myPlaces array
-		myPlaces[i].marker = marker;		
-	}
+		place.marker = marker;		
+	});
 	
 	//add even listener to a marker
 	myPlaces.forEach(function(place) {
@@ -616,39 +618,42 @@ function searchWithFoursquare(marker,markerInfoWindow){
 	}, 1500);
 	
 	//make an ajax async request
-	$.ajax({
+	var request = $.ajax({
 		type: "GET",
 		dataType: "jsonp",
 		cache: false,
 		url: foursquareUrl,
-		async: true,
-		success: function(data){
-			var result = data.response.venues[0];
-			
-			//get place details	
-			var category = result.categories[0].name;
-			var address = result.location.address;
-			var contact = result.contact.phone;
-			var foursquareMemebersNow = result.hereNow.count;
-			var totalPeopleVisited = result.stats.usersCount;
-			
-			//create new string with with details			
-			var placeDetails = '<li><h6>Category: ' + category + '</h6></li>' +
-				'<li><h6>Address: ' + address + '</h6></li>'+ 
-				'<li><h6>Phone: ' + contact + '</h6></li>' +
-				'<li><h6>Foursquare members now: ' + foursquareMemebersNow + '</h6></li>' + 
-				'<li><h6>Total number of visitors: ' + totalPeopleVisited + '</h6></li>';	
-			
-			//call the infowindow generator
-			showInfoWindow (marker, markerInfoWindow, placeDetails);
+		async: true
+	});
+	
+	request.done( function(data){
+		var result = data.response.venues[0];
 		
-			clearTimeout(fourSquareRequestTimeout);		
-		},
-		//get error status response
-		error: function(jqXHR, textStatus, errorThrown) {
+		//get place details	
+		var category = result.categories[0].name;
+		var address = result.location.address;
+		var contact = result.contact.phone;
+		var foursquareMemebersNow = result.hereNow.count;
+		var totalPeopleVisited = result.stats.usersCount;
+		
+		//create new string with with details			
+		var placeDetails = '<li><h6>Category: ' + category + '</h6></li>' +
+			'<li><h6>Address: ' + address + '</h6></li>'+ 
+			'<li><h6>Phone: ' + contact + '</h6></li>' +
+			'<li><h6>Foursquare members now: ' + foursquareMemebersNow + '</h6></li>' + 
+			'<li><h6>Total number of visitors: ' + totalPeopleVisited + '</h6></li>';	
+		
+		//call the infowindow generator
+		showInfoWindow (marker, markerInfoWindow, placeDetails);
+	
+		clearTimeout(fourSquareRequestTimeout);		
+	});
+		
+	//get error status response
+	request.fail( function(jqXHR, textStatus, errorThrown) {
 			handleError('\n' + jqXHR.status + '\n' + textStatus + '\n' + errorThrown);
-		}
-	});		
+	});
+			
 }
 
 //animate marker when clicked
@@ -656,7 +661,7 @@ function toggleBounce(marker) {
     marker.setAnimation(google.maps.Animation.BOUNCE);
     setTimeout(function () {
       marker.setAnimation(null);
-    }, 2000);
+    }, 2100);
 }  
 
 //function to inform user of errors
@@ -712,7 +717,7 @@ function MyViewModel() {
 	//click event to show place infowindow
 	self.openInfoWindow = function(place){	
 		searchWithFoursquare(place.marker, markerInfoWindow);
-		toggleBounce(place.marker);
+		google.maps.event.trigger( place.marker, 'click' );
 	};	
 	
 	//filter the results with user query
@@ -730,14 +735,10 @@ function MyViewModel() {
 				return self.placesList();
 			} else {	
 				//return results matching the query
-				return ko.utils.arrayFilter(self.placesList(), function(place) {					
-					if (place.title.toLowerCase().indexOf(filter) >= 0){
-						place.marker.setVisible(true);
-						return true;
-					} else{
-						place.marker.setVisible(false);
-						return false;
-					}				
+				return ko.utils.arrayFilter(self.placesList(), function(place) {
+					var match = place.title.toLowerCase().indexOf(filter) >= 0;
+					place.marker.setVisible(match);
+					return match;		
 				});				
 			}
 		} else{

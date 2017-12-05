@@ -1,14 +1,8 @@
 //Create a global map variable
 var map;
 
-//create empty array to store future markers
-var markers = [];
-
 //Create a global infowindow variable
 var markerInfoWindow;	
-
-//array for storing new search results
-var newPlaces = [];
 
 //list my default locations on the map
 var myPlaces = [
@@ -390,16 +384,15 @@ function initMap() {
 		
 		// Create an onclick event to open the large infowindow at each marker		
 		place.marker.addListener('click', function(){
-			showInfoWindow(this, markerInfoWindow);				
+			searchWithFoursquare(this, markerInfoWindow);	
+			toggleBounce(this);			
 		});	
 	});
-	
-	//close side panel
-	document.getElementsByClassName('closebtn')[0].addEventListener('click', closeNav);	
 	
 	//initiate new search with GoogleMaps searchbox
 	initAutocomplete(input, markerInfoWindow);
 }
+
 
 // This function takes in a COLOR, and then creates a new marker
 // icon of that color. 
@@ -447,7 +440,7 @@ function closeNav() {
 }
 
 //generate new infowindow for each marker
-function showInfoWindow (marker, markerInfoWindow) {	
+function showInfoWindow (marker, markerInfoWindow, details) {	
 	// Check to make sure the infowindow is not already opened on this marker.
 	if (markerInfoWindow.marker != marker) {
 		// Clear the infowindow content to give the streetview time to load.
@@ -471,9 +464,9 @@ function showInfoWindow (marker, markerInfoWindow) {
 			//add response results to the DOM
 			var viewHeading = google.maps.geometry.spherical.computeHeading(streetViewLocation, marker.position);
 			markerInfoWindow.setContent('<div id="name">' + marker.title + 
-			'</div><div id="pano"></div><div><ul id="placeInfo"></ul></div>' + 
+			'</div><div id="pano"></div><div><ul id="placeInfo">' + details + '</ul></div>' + 
 			'<div id"fousquare"><a href="https://developer.foursquare.com/">Powered by Foursquare API</a></div>');
-			searchWithFoursquare(marker);
+		
 			var panorama = new google.maps.StreetViewPanorama(
 				document.getElementById('pano'), {
 					position: streetViewLocation,
@@ -601,7 +594,7 @@ function initAutocomplete(input, markerInfoWindow) {
 } 
 
 //search for place additional details with Fousquare API
-function searchWithFoursquare(marker){
+function searchWithFoursquare(marker,markerInfoWindow){
 	//get place coordinater
 	var placeCoordinates = String(marker.position.lat()) + ',' + String(marker.position.lng());
 	
@@ -640,36 +633,16 @@ function searchWithFoursquare(marker){
 			var foursquareMemebersNow = result.hereNow.count;
 			var totalPeopleVisited = result.stats.usersCount;
 			
-			//create new object with details			
-			var placeDetails = {
-				category: 'Category: ' + category,
-				address: 'Address: ' + address,
-				phone: 'Phone: ' + contact,
-				visitors: 'Foursquare members now: ' + foursquareMemebersNow,
-				totalVisitors: 'Total number of visitors: ' + totalPeopleVisited				
-			};
+			//create new string with with details			
+			var placeDetails = '<li><h6>Category: ' + category + '</h6></li>' +
+				'<li><h6>Address: ' + address + '</h6></li>'+ 
+				'<li><h6>Phone: ' + contact + '</h6></li>' +
+				'<li><h6>Foursquare members now: ' + foursquareMemebersNow + '</h6></li>' + 
+				'<li><h6>Total number of visitors: ' + totalPeopleVisited + '</h6></li>';	
 			
-			console.log(placeDetails);
-			
-			//add the info to infowindow div
-			var info = document.getElementById('placeInfo');	
-			//clear old listings
-			info.innerHTML = '';
-				
-			for (var property in placeDetails){	
-				if (placeDetails.hasOwnProperty(property)) {
-					var elem = document.createElement('li');
-					var item = document.createElement('h6');
-					// Set its contents:
-					item.append(document.createTextNode(placeDetails[property]));
-					//add it to h5
-					elem.appendChild(item);
-					// Add it to the list:
-					info.appendChild(elem);	
-				} else {
-					handleError('No place data found.');
-				}
-			}		
+			//call the infowindow generator
+			showInfoWindow (marker, markerInfoWindow, placeDetails);
+		
 			clearTimeout(fourSquareRequestTimeout);		
 		},
 		//get error status response
@@ -678,6 +651,14 @@ function searchWithFoursquare(marker){
 		}
 	});		
 }
+
+//animate marker when clicked
+function toggleBounce(marker) {
+    marker.setAnimation(google.maps.Animation.BOUNCE);
+    setTimeout(function () {
+      marker.setAnimation(null);
+    }, 2000);
+}  
 
 //function to inform user of errors
 function handleError(error){
@@ -705,18 +686,20 @@ function handleError(error){
 	});	
 }
 
+//inform users when Maps API fails to load
+function mapError() {
+    handleError('Google Maps has failed to load. Please check your internet' +
+	'connection or URL and try again.');
+};
+
 function MyViewModel() {
     var self = this;
 	
-	self.newPlaces = ko.observableArray();
-	//pass new results of the google searchbox results to an observable array
-	self.newPlaces = ko.observableArray(newPlaces);
-	
-	self.placesList = ko.observableArray();  
-		
+	self.placesList = ko.observableArray(myPlaces);  
+
 	//query for filtering the results
 	self.query = ko.observable("");
-		
+
 	//make marker bounce when hover in listing section
 	self.enableBounce = function(place){
 		place.marker.setAnimation(google.maps.Animation.BOUNCE);	
@@ -728,20 +711,25 @@ function MyViewModel() {
 	};
 
 	//click event to show place infowindow
-	self.openInfoWindow = function(place){		
-		showInfoWindow(place.marker, markerInfoWindow);
-	};
-	
+	self.openInfoWindow = function(place){	
+		searchWithFoursquare(place.marker, markerInfoWindow);
+		toggleBounce(place.marker);
+	};	
+
 	//filter the results with user query
 	self.filterResults = ko.computed(function(){
 		
 		var filter = self.query().toLowerCase();
-		if (self.placesList(myPlaces).length !== 0) {
+		if (self.placesList().length !== 0) {
 			if (!filter){
+				self.placesList().forEach(function(place) {	
+					//place.marker.setVisible(true);
+				});
+				
 				return self.placesList();
 			} else {	
 				//return results matching the query
-				return ko.utils.arrayFilter(self.placesList(), function(place) {					
+				return ko.utils.arrayFilter(self.placesList(), function(place) {
 					if (place.title.toLowerCase().indexOf(filter) >= 0){
 						place.marker.setVisible(true);
 						return true;

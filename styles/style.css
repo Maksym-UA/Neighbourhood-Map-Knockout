@@ -1,4 +1,5 @@
-html, body { 
+html, 
+body { 
 	height: 100%;
 	align-items: center; 
 	font-family: sans-serif; 
@@ -38,6 +39,7 @@ header {
 .title h2 {
 	margin-bottom: 20px;
 }
+
 
 #icon {
 	position: absolute;
@@ -107,9 +109,11 @@ header {
   #search-results h5{font-size: 15px;}
 }
 
+
 #search {
 	display: block;
 }
+
 
 #places-search {
     width: 100%;

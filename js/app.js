@@ -734,6 +734,7 @@ function MyViewModel() {
 				
 				return self.placesList();
 			} else {	
+				markerInfoWindow.close();
 				//return results matching the query
 				return ko.utils.arrayFilter(self.placesList(), function(place) {
 					var match = place.title.toLowerCase().indexOf(filter) >= 0;
